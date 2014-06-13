@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <errno.h>
 
 #define CONNECT "CONNECT " // in use
 #define LOGOUT "LOGOUT" // in use
@@ -29,7 +30,7 @@ void srv_connect(char *ipAddr, int portNum, char *usr, char *msg)
 {
         /* Declarations */
         struct sockaddr_in serveraddr;
-        int sd;
+        int sd, ret;
         char conMessage[BUF_SIZE];
         char message[BUF_SIZE];
         char response[BUF_SIZE];
@@ -50,7 +51,10 @@ void srv_connect(char *ipAddr, int portNum, char *usr, char *msg)
         serveraddr.sin_port = htons(portNum);
 
         /* Connect */
-        connect(sd, (struct sockaddr*)&serveraddr, sizeof(struct sockaddr_in));
+        ret = connect(sd, (struct sockaddr*)&serveraddr, sizeof(struct sockaddr_in));
+	if (ret == -1) {
+		perror("connect");
+	}
 
 	if (usr == NULL) {
 		printf("%d\n", get_name(conMessage, BUF_SIZE));
@@ -62,18 +66,25 @@ void srv_connect(char *ipAddr, int portNum, char *usr, char *msg)
 	//printf("%s\n", conMessage);
 	write(sd, conMessage, strlen(conMessage)+1);
 	read(sd, response, BUF_SIZE);
+	printf("%s\n", response);
 
 	//printf("%d\n", get_msg(message, BUF_SIZE));
 	strcpy(message, msg);
 
-        while (!strcmp(message, "MESSAGE /q")) {
+        while (strcmp(message, "MESSAGE /q")) {
                 /* Send data */
-                write(sd, message, strlen(message)+1);
+                //ret = write(sd, message, strlen(message)+1);
+		ret = send(sd, message, strlen(message)+1, 0);
+		if (ret == -1)
+			perror("send");
 
 		memset(response, 0, BUF_SIZE);
 
                 /* Read data */
-                read(sd, response, BUF_SIZE);
+                //ret = read(sd, response, BUF_SIZE);
+		ret = recv(sd, response, BUF_SIZE, 0);
+		if (ret == -1)
+			perror("recv");
 
                 printf("%s\n", response);
 
