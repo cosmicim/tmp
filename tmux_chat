@@ -1,0 +1,41 @@
+TMUX_LAYOUT="tiled"
+SESSION="$USER"_chat
+
+function tmux_create_session {
+	tmux new-session -s "$SESSION" -n main -d
+}
+
+function tmux_new_pane {
+	tmux split-window
+	tmux select-layout "$TMUX_LAYOUT"
+}
+
+function tmux_create_panes {
+	echo "create_panes: " $1
+
+	for ((i = 1; i < $1; i++)); do
+		tmux_new_pane
+	done
+}
+
+function tmux_run_commands {
+	echo "Run commands ($1): $2"
+
+	for ((i = 0; i < $1; i++)); do
+		#cmd = $(echo "$2" | tr "#" $i)
+		cmd=$2
+		echo "Exec: >>$cmd<< on $i"
+
+		tmux send-keys -t $i "$cmd" C-m
+	done
+}
+
+function tmux_attach {
+	tmux -2 attach-session -t "$SESSION"
+}
+
+tmux_create_session
+tmux_create_panes 5
+#tmux_run_commands 5 "telnet 95.34.86.97 1337"
+tmux_run_commands 5 "bin/shitclient -s 127.0.0.1 -p 1337 -u Test -m Faen!"
+tmux_attach
